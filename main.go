@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"mime"
 	"net/http"
@@ -27,7 +26,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		contentType = "application/octet-stream"
 	}
 
-	data, err := ioutil.ReadFile(fmt.Sprintf("%s%s", h.DocumentRoot, path))
+	data, err := os.ReadFile(fmt.Sprintf("%s%s", h.DocumentRoot, filepath.FromSlash(path)))
 	if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
