@@ -4,53 +4,13 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"mime"
 	"net/http"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"strings"
 	"syscall"
+
+	"github.com/dolow/server.go/server"
 )
-
-type Handler struct {
-	DocumentRoot string
-}
-
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	path := r.URL.Path
-
-	status := 200
-
-	if path == "" || path == "/" {
-		path = "/index.html"
-	}
-
-	fullPath := fmt.Sprintf("%s%s", h.DocumentRoot, filepath.FromSlash(path))
-
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		status = 404
-		path = "/404.html"
-	}
-
-	ext := strings.ToLower(filepath.Ext(path))
-	contentType := mime.TypeByExtension(ext)
-	if contentType == "" {
-		contentType = "application/octet-stream"
-	}
-
-	data, err := os.ReadFile(fullPath)
-	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
-		return
-	}
-
-	w.Header().Set("Content-Type", contentType)
-
-	w.WriteHeader(status)
-	w.Write(data)
-}
 
 func main() {
 	if len(os.Args) == 1 {
@@ -61,10 +21,10 @@ func main() {
 	port := os.Args[1]
 	docRoot := os.Args[2]
 
-	handler := &Handler{
+	handler := &server.Handler{
 		DocumentRoot: docRoot,
 	}
-	server := &http.Server{
+	httpServer := &http.Server{
 		Addr:    fmt.Sprintf(":%s", port),
 		Handler: handler,
 	}
@@ -76,12 +36,12 @@ func main() {
 		signal.Notify(sigint, syscall.SIGTERM, os.Interrupt)
 		<-sigint
 
-		server.Shutdown(context.Background())
+		httpServer.Shutdown(context.Background())
 
 		log.Println("server shutdown")
 	}()
 
-	server.ListenAndServe()
+	httpServer.ListenAndServe()
 
 	log.Println("finishing...")
 }
